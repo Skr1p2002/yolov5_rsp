@@ -65,6 +65,8 @@ from utils.general import (
 )
 from utils.torch_utils import select_device, smart_inference_mode
 
+from utils.quee_publisher import execute
+
 
 @smart_inference_mode()
 def run(
@@ -222,34 +224,17 @@ def run(
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / "crops" / names[c] / f"{p.stem}.jpg", BGR=True)
 
-            # Stream results
-            im0 = annotator.result()
-            if view_img:
-                if platform.system() == "Linux" and p not in windows:
-                    windows.append(p)
-                    cv2.namedWindow(str(p), cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)  # allow window resize (Linux)
-                    cv2.resizeWindow(str(p), im0.shape[1], im0.shape[0])
-                cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
-
-            # Save results (image with detections)
-            if save_img:
-                if dataset.mode == "image":
-                    cv2.imwrite(save_path, im0)
-                else:  # 'video' or 'stream'
-                    if vid_path[i] != save_path:  # new video
-                        vid_path[i] = save_path
-                        if isinstance(vid_writer[i], cv2.VideoWriter):
-                            vid_writer[i].release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                        save_path = str(Path(save_path).with_suffix(".mp4"))  # force *.mp4 suffix on results videos
-                        vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"mp4v"), fps, (w, h))
-                    vid_writer[i].write(im0)
+            # publish the result to MQTT
+            # TODO : send without saving the file
+            fileName = str(i) + ".jpg"
+            imgPath = save_dir / fileName
+            cv2.imwrite(imgPath, im0)
+        
+            # TODO : send the video stream
+            # ps : it is consider to be difrent from img
+            with open(imgPath, "rb") as file:
+                filecontent = file.read()
+                execute(filecontent)
 
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
