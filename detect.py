@@ -98,6 +98,12 @@ def run(
     half=False,  # use FP16 half-precision inference
     dnn=False,  # use OpenCV DNN for ONNX inference
     vid_stride=1,  # video frame-rate stride
+
+    broker="localhost",  #
+    port=1883,  # 
+    topic="",  # 
+    username="", # 
+    password="",  # 
 ):
     source = str(source)
     save_img = not nosave and not source.endswith(".txt")  # save inference images
@@ -230,11 +236,9 @@ def run(
             imgPath = save_dir / fileName
             cv2.imwrite(imgPath, im0)
         
-            # TODO : send the video stream
-            # ps : it is consider to be difrent from img
             with open(imgPath, "rb") as file:
                 filecontent = file.read()
-                execute(filecontent)
+                execute(filecontent, broker, port, topic, username, password)
 
         # Print time (inference-only)
         LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
@@ -280,6 +284,14 @@ def parse_opt():
     parser.add_argument("--half", action="store_true", help="use FP16 half-precision inference")
     parser.add_argument("--dnn", action="store_true", help="use OpenCV DNN for ONNX inference")
     parser.add_argument("--vid-stride", type=int, default=1, help="video frame-rate stride")
+
+    # quee arg
+    parser.add_argument("--broker", type=str, default="localhost", help="Please type broker ip")
+    parser.add_argument("--port", type=int, default=1883, help="Please type your broker port")
+    parser.add_argument("--topic", type=str, help="Please type topic name")
+    parser.add_argument("--username", type=str, help="Please type username")
+    parser.add_argument("--password", type=str, help="Please type password")
+
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(vars(opt))
@@ -293,5 +305,7 @@ def main(opt):
 
 
 if __name__ == "__main__":
+    # TODO : read the quee parameter from ARG
+    # TODO : open the camera and send the feed 
     opt = parse_opt()
     main(opt)

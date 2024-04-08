@@ -7,17 +7,12 @@ from paho.mqtt import client as mqtt_client
 
 connected=False
 
-broker = 'localhost'
-port = 1883
-topic = "hello/topic"
 # Generate a Client ID with the subscribe prefix.
 client_id = f'python-mqtt-{random.randint(0, 1000)}'
-username = 'user1'
-password = '123123123'
 
 
-def connect_mqtt():
-    def on_connect(client, userdata, flags, rc, self):
+def connect_mqtt(broker, port, username, password):
+    def on_connect(client, userdata, flags, rc, object):
         if rc == 0:
             print("Connected to MQTT Broker!")
         else:
@@ -33,24 +28,7 @@ def connect_mqtt():
         #time.sleep (0.2)
     return client
 
-
-def publish(client):
-    msg_count = 1
-    while True:
-        time.sleep(1)
-        msg = f"messages: {msg_count}"
-        result = client.publish(topic, msg)
-        # result: [0, 1]
-        status = result[0]
-        if status == 0:
-            print(f"Send `{msg}` to topic `{topic}`")
-        else:
-            print(f"Failed to send message to topic {topic}")
-        msg_count += 1
-        if msg_count > 5:
-            break
-
-def publish_img(client, img):
+def publish_img(client, img, topic):
     
     # todo : convert image to base64
     base64_content = base64.b64encode(img)
@@ -63,8 +41,8 @@ def publish_img(client, img):
     else:
         print(f"Failed to send message to topic {topic}")
 
-def execute(img):
-    client = connect_mqtt()
+def execute(img, broker, port, topic, username, password):
+    client = connect_mqtt(broker, port, username, password)
     client.loop_start()
-    publish_img(client, img)
+    publish_img(client, img, topic)
     client.loop_stop() 
